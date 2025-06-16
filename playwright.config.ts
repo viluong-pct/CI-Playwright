@@ -13,7 +13,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "retain-on-failure",
   },
-  globalSetup: require.resolve("./tests/global-setup"),
-  globalTeardown: require.resolve("./tests/global-teardown"),
+  //   globalSetup: require.resolve("./tests/global-setup"),
+  //   globalTeardown: require.resolve("./tests/global-teardown"),
   reporter: [["html", { outputFolder: "playwright-report" }]],
 });
