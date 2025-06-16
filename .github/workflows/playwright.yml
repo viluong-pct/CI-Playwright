@@ -1,22 +1,49 @@
 name: Playwright Test Run on Test Environment
 
 on:
-  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  BASE_URL: https://talent.direct.hipro-job.jp
+  ADMIN_TOKEN: your_admin_token_here
 
 jobs:
-  test-on-test-env:
+  ci:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        node-version: [18.17.1]
+        shard: [1, 2, 3]
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      # checkout repository
+      - name: Checkout Repo
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      # prepare node runtime
+      - name: Prepare Node Env
+        uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: ${{ matrix.node-version }}
+          cache: npm
 
-      - name: Install dependencies
+      # cf. https://github.com/actions/cache/blob/main/examples.md#node---npm
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        run: echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+
+      - uses: actions/cache@v4
+        id: npm-cache # use this to check for `cache-hit` ==> if: steps.npm-cache.outputs.cache-hit != 'true'
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-node-${{ matrix.shard }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      # install dependencies
+      - name: Install Dependencies
         run: npm ci
 
       - name: Install Playwright
@@ -24,7 +51,7 @@ jobs:
 
       - name: Create .env.test file
         run: |
-          echo "BASE_URL=https://test.yourapp.com" >> .env.test
+          echo "BASE_URL=https://talent.direct.hipro-job.jp" >> .env.test
           echo "ADMIN_TOKEN=${{ secrets.ADMIN_TOKEN }}" >> .env.test
 
       - name: Run tests on Test environment
